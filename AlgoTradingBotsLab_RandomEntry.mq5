@@ -26,7 +26,7 @@ input double         InpSLatr      = 3.0;              // Stop loss in ATR
 input double         InpTPatr      = 0.0;              // Take profit in ATR, 0 = none
 input double         InpTrailArm   = 0.0;              // Trail arms at profit in ATR, 0 = off
 input double         InpTrailDist  = 1.5;              // Trail distance in ATR
-input int            InpMaxBars    = 0;                // Close after N bars, 0 = off
+input int            InpMaxBars    = 24;               // Close after N bars, 0 = off
 input bool           InpExitOnSignal = true;           // Use the bot's own exit rule
 input bool           InpUseSession = false;            // Session filter on
 input int            InpSessStart  = 7;                // Session start hour, server time
