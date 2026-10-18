@@ -14,6 +14,8 @@ input int            InpFast       = 20;               // Fast SMA period
 input int            InpSlow       = 50;               // Slow SMA period
 input double         InpMult       = 2.0;              // Lot factor after each loss
 input int            InpMaxStreak  = 6;                // Losses after which the lot stops growing
+input double         InpSLpts      = 0;                // Stop loss in points, 0 = the ATR stop (classic martingale: same stop and target)
+input double         InpTPpts      = 0;                // Take profit in points, 0 = the ATR target
 input int            InpSizeMode   = 0;                // Sizing: 0 fixed lot, 1 fixed risk in USD, 2 percent of the balance
 input double         InpLots       = 0.10;             // Fixed lot size (sizing 0)
 input double         InpRiskUSD    = 50.0;             // Money at risk per trade (sizing 1)
@@ -119,6 +121,8 @@ int LossStreak()
 // Entry signal from the last closed bar: 1 buy, -1 sell, 0 none. Called once per new bar.
 int Signal()
 {
+   if(InpSLpts > 0) g_slDist = InpSLpts * _Point;     // fixed distances in points replace the ATR stop and target
+   if(InpTPpts > 0) g_tpDist = InpTPpts * _Point;
    double f1 = Buf(hFast, 0, 1), f2 = Buf(hFast, 0, 2), s1 = Buf(hSlow, 0, 1), s2 = Buf(hSlow, 0, 2);
    if(AnyEmpty(f1, f2, s1, s2)) return 0;
    return CrossOf(f1, f2, s1, s2);
