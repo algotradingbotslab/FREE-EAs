@@ -27,6 +27,10 @@ input int             InpExpandAfter = 4;              // Gap grows after this m
 input double          InpExpandMult  = 1.2;            // Gap factor for each later trade
 input int             InpMaxTrades   = 10;             // Maximum trades in one basket
 input double          InpTPatr       = 1.0;            // Basket target from average price, ATR
+input bool            InpUseSession  = false;          // Session filter on, only for starting a new cycle
+input int             InpSessStart   = 7;              // Session start hour, server time
+input int             InpSessEnd     = 17;             // Session end hour, server time
+input int             InpSessMode    = 0;              // Session windows: 0 hours above, 1 London, 2 New York, 3 London and New York (server time)
 input long            InpMagic       = 4743;           // Magic number
 
 CTrade   trade;
@@ -182,6 +186,16 @@ bool OpenTrade(bool buy)
    return true;
 }
 
+bool SessionOk()
+{
+   if(!InpUseSession) return true;
+   MqlDateTime t; TimeToStruct(TimeCurrent(), t);
+   if(InpSessMode == 1) return t.hour >= 10 && t.hour < 18;      // London, server time
+   if(InpSessMode == 2) return t.hour >= 15 && t.hour < 23;      // New York, server time
+   if(InpSessMode == 3) return t.hour >= 10 && t.hour < 23;      // London and New York
+   return t.hour >= InpSessStart && t.hour < InpSessEnd;
+}
+
 void StartBasket(int sig)
 {
    double atr = Buf(hAtr, 0, 1);
@@ -217,6 +231,7 @@ int OnInit()
 void OnDeinit(const int reason)
 {
    Comment("");
+   Print("GridMartingale finished");
 }
 
 void OnTick()
@@ -227,7 +242,7 @@ void OnTick()
       lastBar = bar;
       int sig = StartSignal();                              // drawn on every bar so the random stream does not depend on the state
       if(g_n > 0 && OwnCount() == 0) g_n = 0;
-      g_startSig = g_n == 0 ? sig : 0;                      // a start only counts when the bar begins flat
+      g_startSig = (g_n == 0 && SessionOk()) ? sig : 0;                      // a start only counts when the bar begins flat
    }
    if(g_n > 0)
    {

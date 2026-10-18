@@ -28,6 +28,10 @@ input int             InpLevels      = 10;             // Levels on each side
 input double          InpResetSteps  = 3.0;            // Re-anchor when flat and this far
 input bool            InpUseMAFilter = false;          // Buy below the MA only, sell above only
 input int             InpMAFilterPer = 200;            // Filter MA period
+input bool            InpUseSession  = false;          // Session filter on, only for starting a new cycle
+input int             InpSessStart   = 7;              // Session start hour, server time
+input int             InpSessEnd     = 17;             // Session end hour, server time
+input int             InpSessMode    = 0;              // Session windows: 0 hours above, 1 London, 2 New York, 3 London and New York (server time)
 input long            InpMagic       = 4742;           // Magic number
 
 CTrade   trade;                           // market orders
@@ -205,6 +209,16 @@ bool RetriableCode(uint rc)
           rc == TRADE_RETCODE_PRICE_CHANGED || rc == TRADE_RETCODE_CONNECTION || rc == TRADE_RETCODE_TIMEOUT;
 }
 
+bool SessionOk()
+{
+   if(!InpUseSession) return true;
+   MqlDateTime t; TimeToStruct(TimeCurrent(), t);
+   if(InpSessMode == 1) return t.hour >= 10 && t.hour < 18;      // London, server time
+   if(InpSessMode == 2) return t.hour >= 15 && t.hour < 23;      // New York, server time
+   if(InpSessMode == 3) return t.hour >= 10 && t.hour < 23;      // London and New York
+   return t.hour >= InpSessStart && t.hour < InpSessEnd;
+}
+
 void StartCycle(int sig)
 {
    g_startSig = 0;                                        // set again below only when the market was closed
@@ -258,11 +272,12 @@ int OnInit()
 void OnDeinit(const int reason)
 {
    Comment("");
+   Print("GridSimple finished");
 }
 
 void OnTick()
 {
-   if(g_startSig != 0 && !g_active) StartCycle(g_startSig);
+   if(g_startSig != 0 && !g_active && SessionOk()) StartCycle(g_startSig);
    datetime bar = iTime(_Symbol, _Period, 0);
    if(bar == lastBar) return;
    lastBar = bar;
@@ -270,7 +285,7 @@ void OnTick()
    int sig = StartSignal();          // drawn on every bar so the random stream does not depend on the state
    if(!g_active)
    {
-      if(sig != 0) StartCycle(sig);
+      if(sig != 0 && SessionOk()) StartCycle(sig);
       return;
    }
    if(OwnCount() == 0)

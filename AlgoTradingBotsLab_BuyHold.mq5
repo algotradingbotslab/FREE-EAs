@@ -18,6 +18,11 @@ int OnInit()
    return INIT_SUCCEEDED;
 }
 
+void OnDeinit(const int reason)
+{
+   Print("BuyHold finished");
+}
+
 void OnTick()
 {
    if(g_bought) return;
